@@ -24,15 +24,14 @@ class OnboardingScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(),
-                
-                // Logo and Icon
-                Column(
+          child: Column(
+            children: [
+              const Spacer(flex: 2), // 👈 top space
+
+              // 🔵 CONTENT BLOCK (logo + all texts)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Column(
                   children: [
                     Container(
                       width: 80,
@@ -47,7 +46,9 @@ class OnboardingScreen extends StatelessWidget {
                         color: Color(0xFF1E3A8A),
                       ),
                     ),
-                    const SizedBox(height: 24),
+
+                    const SizedBox(height: 12),
+
                     Text(
                       'Welcome Home',
                       style: GoogleFonts.inter(
@@ -56,40 +57,41 @@ class OnboardingScreen extends StatelessWidget {
                         color: Colors.white,
                       ),
                     ),
+
+                    const SizedBox(height: 25),
+
+                    Text(
+                      'Find And Buy The\nProperty Of Your Dreams.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        height: 1.3,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Text(
+                      'The Best Choice For You',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.9),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ],
                 ),
-                
-                const SizedBox(height: 60),
-                
-                // Headline
-                Text(
-                  'Find And Buy The\nProperty Of Your Dreams.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    height: 1.3,
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Tagline
-                Text(
-                  'The Best Choice For You',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                
-                const SizedBox(height: 80),
-                
-                // Get Started Button
-                SizedBox(
+              ),
+
+              const Spacer(flex: 3), // 👈 bottom space (bigger → content goes up a bit)
+
+              // 🔵 BUTTON
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: SizedBox(
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
@@ -111,10 +113,10 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                
-                const SizedBox(height: 40),
-              ],
-            ),
+              ),
+
+              const SizedBox(height: 30),
+            ],
           ),
         ),
       ),
