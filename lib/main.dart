@@ -3,7 +3,7 @@ import 'package:house_renting_mobile/screens/onboarding_screen.dart';
 import 'package:house_renting_mobile/screens/home_screen.dart';
 import 'package:house_renting_mobile/screens/search_results_screen.dart';
 import 'package:house_renting_mobile/screens/saved_screen.dart';
-import 'package:house_renting_mobile/screens/chats_screen.dart';
+import 'package:house_renting_mobile/screens/rent_screen.dart';
 import 'package:house_renting_mobile/screens/profile_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -49,7 +49,7 @@ class _MainNavigationState extends State<MainNavigation> {
     HomeScreen(),
     SearchResultsScreen(),
     SavedScreen(),
-    ChatsScreen(),
+    RentScreen(),
     ProfileScreen(),
   ];
 
@@ -91,8 +91,8 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Saved',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: 'Chats',
+            icon: Icon(Icons.home_outlined),
+            label: 'Rent',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
