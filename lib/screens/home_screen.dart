@@ -53,7 +53,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icons.keyboard_arrow_down,
                 color: Color(0xFF1E3A8A),
               ),
-              items: ['Toul Kork', 'Phnom Penh', 'Sen Sok', 'BKK'].map((location) {
+              items: ['Toul Kork', 'Phnom Penh', 'Sen Sok', 'BKK']
+                  .map((location) {
                 return DropdownMenuItem<String>(
                   value: location,
                   child: Text(
@@ -106,32 +107,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Search Properties',
-                    hintStyle: GoogleFonts.inter(
-                      color: Colors.grey[500],
-                    ),
+                    hintStyle:
+                    GoogleFonts.inter(color: Colors.grey[500]),
                     prefixIcon: const Icon(
                       Icons.search,
                       color: Color(0xFF1E3A8A),
                     ),
                     suffixIcon: IconButton(
-                      icon: const Icon(
-                        Icons.tune,
-                        color: Color(0xFF1E3A8A),
-                      ),
+                      icon: const Icon(Icons.tune,
+                          color: Color(0xFF1E3A8A)),
                       onPressed: () {},
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
+                        horizontal: 16, vertical: 14),
                   ),
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              // Category Section
+              // Category
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -170,12 +166,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     return Padding(
                       padding: EdgeInsets.only(
-                        right: index == categories.length - 1 ? 0 : 12,
-                      ),
+                          right: index == categories.length - 1 ? 0 : 12),
                       child: FilterChip(
                         label: Text(category),
                         selected: isSelected,
-                        onSelected: (selected) {
+                        onSelected: (_) {
                           setState(() {
                             selectedCategory = category;
                           });
@@ -186,16 +181,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: isSelected
                               ? Colors.white
                               : const Color(0xFF1F2937),
-                          fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
                         ),
                         side: BorderSide(
                           color: isSelected
                               ? const Color(0xFF1E3A8A)
                               : Colors.grey[300]!,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
                         ),
                       ),
                     );
@@ -205,34 +195,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 24),
 
-              // Best For You Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Best For You',
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1F2937),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      'See All',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF1E3A8A),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+              // Best For You
+              Text(
+                'Best For You',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
 
               const SizedBox(height: 12),
 
-              // Horizontal Property Cards for Best For You
               SizedBox(
                 height: 235,
                 child: ListView.builder(
@@ -242,23 +215,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     final property = bestForYouProperties[index];
                     return Container(
                       width: 280,
-                      margin: EdgeInsets.only(
-                        right:
-                        index == bestForYouProperties.length - 1 ? 0 : 12,
-                      ),
+                      margin: const EdgeInsets.only(right: 12),
                       child: PropertyCard(
                         property: property,
                         height: 235,
-                        onTap: () {
-                          // Navigate to property details
-                        },
-                        onFavoriteTap: () {
-                          setState(() {
-                            bestForYouProperties[index] = property.copyWith(
-                              isFavorited: !property.isFavorited,
-                            );
-                          });
-                        },
                       ),
                     );
                   },
@@ -267,63 +227,109 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 24),
 
-              // Popular Properties Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Popular Properties',
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1F2937),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      'See All',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF1E3A8A),
-                        fontWeight: FontWeight.w500,
+              // Popular
+              Text(
+                'Popular Properties',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                height: 235,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: popularProperties.length,
+                  itemBuilder: (context, index) {
+                    final property = popularProperties[index];
+                    return Container(
+                      width: 280,
+                      margin: const EdgeInsets.only(right: 12),
+                      child: PropertyCard(
+                        property: property,
+                        height: 235,
                       ),
-                    ),
-                  ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ✅ Achievements Section
+              Text(
+                'Our Achievements',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  _buildStatCard('1.2K+', 'Properties'),
+                  _buildStatCard('800+', 'Clients'),
                 ],
               ),
 
               const SizedBox(height: 12),
 
-              // Vertical Property Cards for Popular Properties
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: popularProperties.length,
-                itemBuilder: (context, index) {
-                  final property = popularProperties[index];
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom: index == popularProperties.length - 1 ? 0 : 12,
-                    ),
-                    child: PropertyCard(
-                      property: property,
-                      height: 250,
-                      onTap: () {
-                        // Navigate to property details
-                      },
-                      onFavoriteTap: () {
-                        setState(() {
-                          popularProperties[index] = property.copyWith(
-                            isFavorited: !property.isFavorited,
-                          );
-                        });
-                      },
-                    ),
-                  );
-                },
+              Row(
+                children: [
+                  _buildStatCard('350+', 'Rented'),
+                  _buildStatCard('4.8★', 'Rating'),
+                ],
               ),
+
+              const SizedBox(height: 20),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ Stat Card
+  Widget _buildStatCard(String value, String label) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1E3A8A),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
         ),
       ),
     );
