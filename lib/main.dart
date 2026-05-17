@@ -1,81 +1,70 @@
 import 'package:flutter/material.dart';
-import 'package:house_renting_mobile/screens/onboarding_screen.dart';
-import 'package:house_renting_mobile/screens/home_screen.dart';
-import 'package:house_renting_mobile/screens/search_results_screen.dart';
-import 'package:house_renting_mobile/screens/saved_screen.dart';
-import 'package:house_renting_mobile/screens/rent_screen.dart';
-import 'package:house_renting_mobile/screens/profile_screen.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+import 'screens/home_screen.dart';
+import 'screens/search_results_screen.dart';
+import 'screens/saved_screen.dart';
+import 'screens/rent_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/notification_screen.dart';
 
 void main() {
-  runApp(const HousingAnalyzerApp());
+  runApp(const MyApp());
 }
 
-class HousingAnalyzerApp extends StatelessWidget {
-  const HousingAnalyzerApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Rentor',
       debugShowCheckedModeBanner: false,
+      title: 'House Renting App',
       theme: ThemeData(
-        primaryColor: const Color(0xFF1E3A8A),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1E3A8A),
-          primary: const Color(0xFF1E3A8A),
-          secondary: const Color(0xFFF59E0B),
-        ),
-        textTheme: GoogleFonts.interTextTheme(),
-        useMaterial3: true,
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.grey[50],
       ),
-      home: const MainNavigation(),
+      home: const MainScreen(),
     );
   }
 }
 
-class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
 
   @override
-  State<MainNavigation> createState() => _MainNavigationState();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 0;
-  bool _showOnboarding = true;
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    HomeScreen(),
-    SavedScreen(),
-    RentScreen(),
-    ProfileScreen(),
+    const HomeScreen(),
+    const SearchResultsScreen(),
+    const SavedScreen(),
+    const NotificationScreen(),
+    const ProfileScreen(),
   ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (_showOnboarding) {
-      return OnboardingScreen(
-        onGetStarted: () {
-          setState(() {
-            _showOnboarding = false;
-          });
-        },
-      );
-    }
-
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: _screens[_selectedIndex],
+
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        currentIndex: _selectedIndex,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF1E3A8A),
         unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        elevation: 10,
+        onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -83,16 +72,23 @@ class _MainNavigationState extends State<MainNavigation> {
           ),
 
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
+            icon: Icon(Icons.search),
+            label: 'Search',
           ),
+
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: 'Rent',
+            icon: Icon(Icons.bookmark),
+            label: 'Saved',
           ),
+
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'My Profile',
+            icon: Icon(Icons.notifications_outlined),
+            label: 'Notifications',
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
       ),

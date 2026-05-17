@@ -38,51 +38,14 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Row(
-          children: [
-            const Icon(
-              Icons.location_on_outlined,
-              color: Color(0xFF1E3A8A),
-              size: 20,
-            ),
-            const SizedBox(width: 4),
-            DropdownButton<String>(
-              value: selectedLocation,
-              underline: const SizedBox(),
-              icon: const Icon(
-                Icons.keyboard_arrow_down,
-                color: Color(0xFF1E3A8A),
-              ),
-              items: ['Toul Kork', 'Phnom Penh', 'Sen Sok', 'BKK']
-                  .map((location) {
-                return DropdownMenuItem<String>(
-                  value: location,
-                  child: Text(
-                    location,
-                    style: GoogleFonts.inter(
-                      color: const Color(0xFF1E3A8A),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedLocation = value!;
-                });
-              },
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_outlined,
-              color: Color(0xFF1E3A8A),
-            ),
-            onPressed: () {},
+        title: Text(
+          'Home',
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF1F2937),
           ),
-        ],
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(

@@ -1,32 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class SavedScreen extends StatelessWidget {
-  const SavedScreen({super.key});
+class ChatsScreen extends StatelessWidget {
+  const ChatsScreen({super.key});
 
   static const Color primaryColor = Color(0xFF1E3A8A);
   static const Color darkText = Color(0xFF1F2937);
 
   @override
   Widget build(BuildContext context) {
-    final savedItems = [
+    final notifications = [
       {
-        'title': 'Modern Apartment',
-        'location': 'Phnom Penh',
-        'price': '\$450/month',
-        'beds': '2 Beds',
+        'icon': Icons.home_outlined,
+        'title': 'New Property Added',
+        'subtitle': 'A new apartment is available near your area',
+        'time': '5 min ago',
       },
       {
-        'title': 'Family House',
-        'location': 'Siem Reap',
-        'price': '\$700/month',
-        'beds': '3 Beds',
+        'icon': Icons.bookmark_border,
+        'title': 'Saved Property Updated',
+        'subtitle': 'Price changed for one of your saved homes',
+        'time': '1 hour ago',
       },
       {
-        'title': 'Studio Room',
-        'location': 'BKK1',
-        'price': '\$300/month',
-        'beds': '1 Bed',
+        'icon': Icons.message_outlined,
+        'title': 'Owner Replied',
+        'subtitle': 'You received a reply about the rental house',
+        'time': '3 hours ago',
+      },
+      {
+        'icon': Icons.notifications_outlined,
+        'title': 'Rental Reminder',
+        'subtitle': 'Check your favorite properties before they are gone',
+        'time': 'Yesterday',
       },
     ];
 
@@ -36,7 +42,7 @@ class SavedScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          'Saved',
+          'Notifications',
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -59,7 +65,7 @@ class SavedScreen extends StatelessWidget {
                   radius: 28,
                   backgroundColor: Colors.white,
                   child: Icon(
-                    Icons.bookmark,
+                    Icons.notifications,
                     color: primaryColor,
                     size: 30,
                   ),
@@ -69,7 +75,7 @@ class SavedScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '3 Saved Properties',
+                      '4 Notifications',
                       style: GoogleFonts.inter(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -77,7 +83,7 @@ class SavedScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Your favorite rental homes',
+                      'Stay updated with rental activity',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: Colors.white70,
@@ -93,16 +99,16 @@ class SavedScreen extends StatelessWidget {
 
           Row(
             children: [
-              _statCard(Icons.home_outlined, '12', 'Viewed'),
+              _statCard(Icons.mark_email_unread_outlined, '3', 'Unread'),
               const SizedBox(width: 12),
-              _statCard(Icons.bookmark_border, '3', 'Saved'),
+              _statCard(Icons.done_all, '12', 'Read'),
             ],
           ),
 
           const SizedBox(height: 24),
 
           Text(
-            'Saved Properties',
+            'Recent Notifications',
             style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -112,7 +118,7 @@ class SavedScreen extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          ...savedItems.map((item) {
+          ...notifications.map((item) {
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
@@ -129,67 +135,44 @@ class SavedScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      color: primaryColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.home_outlined,
+                  CircleAvatar(
+                    backgroundColor: primaryColor.withValues(alpha: 0.08),
+                    child: Icon(
+                      item['icon'] as IconData,
                       color: primaryColor,
-                      size: 34,
                     ),
                   ),
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          item['title']!,
+                          item['title'] as String,
                           style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                             color: darkText,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          item['location']!,
+                          item['subtitle'] as String,
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             color: Colors.grey[600],
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          item['price']!,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: primaryColor,
-                          ),
-                        ),
                       ],
                     ),
                   ),
-                  Column(
-                    children: [
-                      const Icon(
-                        Icons.bookmark,
-                        color: primaryColor,
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        item['beds']!,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
+
+                  Text(
+                    item['time'] as String,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: Colors.grey[500],
+                    ),
                   ),
                 ],
               ),
