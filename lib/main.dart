@@ -38,8 +38,10 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
+  List<Widget> get _screens => [
+    HomeScreen(
+      onSeeAll: () => _onItemTapped(1),
+    ),
     const SearchResultsScreen(),
     const SavedScreen(),
     const NotificationScreen(),

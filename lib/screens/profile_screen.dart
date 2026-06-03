@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:house_renting_mobile/screens/onboarding_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -349,7 +350,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.help_outline,
             title: 'Help & Support',
             onTap: () {
-              _openPage(const HelpSupportPage());
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AuthWelcomeScreen(),
+                ),
+                    (route) => false,
+              );
             },
           ),
           _buildDivider(),
@@ -664,10 +671,42 @@ class SearchHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final histories = [
-      'Rental homes in Cambodia',
-      'Apartments near university',
-      'Houses with parking',
-      'Affordable condos',
+      {
+        'title': 'Rental homes in Cambodia',
+        'date': '15 minutes ago',
+        'keyword': 'Rental homes',
+        'location': 'Cambodia',
+        'category': 'House',
+        'price': '\$5000',
+        'result': 'User searched rental homes in Cambodia with house category.',
+      },
+      {
+        'title': 'Apartments near university',
+        'date': '1 hour ago',
+        'keyword': 'Apartments near university',
+        'location': 'Near university',
+        'category': 'Apartment',
+        'price': '\$3000',
+        'result': 'User searched apartments near university.',
+      },
+      {
+        'title': 'Houses with parking',
+        'date': 'Yesterday',
+        'keyword': 'Parking house',
+        'location': 'Phnom Penh',
+        'category': 'House',
+        'price': '\$5000',
+        'result': 'User searched houses that include parking.',
+      },
+      {
+        'title': 'Affordable condos',
+        'date': '2 days ago',
+        'keyword': 'Affordable condos',
+        'location': 'Toul Kork',
+        'category': 'Apartment',
+        'price': '\$2500',
+        'result': 'User searched affordable condos around Toul Kork.',
+      },
     ];
 
     return Scaffold(
@@ -678,6 +717,8 @@ class SearchHistoryPage extends StatelessWidget {
         itemCount: histories.length,
         separatorBuilder: (context, index) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
+          final history = histories[index];
+
           return Card(
             elevation: 0,
             child: ListTile(
@@ -686,16 +727,36 @@ class SearchHistoryPage extends StatelessWidget {
                 color: ProfileScreen.primaryColor,
               ),
               title: Text(
-                histories[index],
+                history['title']!,
                 style: GoogleFonts.inter(
                   color: darkText,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               subtitle: Text(
-                'Recent search',
+                history['date']!,
                 style: GoogleFonts.inter(color: Colors.grey[600]),
               ),
+              trailing: const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SearchHistoryDetailPage(
+                      title: history['title']!,
+                      date: history['date']!,
+                      keyword: history['keyword']!,
+                      location: history['location']!,
+                      category: history['category']!,
+                      price: history['price']!,
+                      result: history['result']!,
+                    ),
+                  ),
+                );
+              },
             ),
           );
         },
@@ -704,6 +765,115 @@ class SearchHistoryPage extends StatelessWidget {
   }
 }
 
+class SearchHistoryDetailPage extends StatelessWidget {
+  final String title;
+  final String date;
+  final String keyword;
+  final String location;
+  final String category;
+  final String price;
+  final String result;
+
+  const SearchHistoryDetailPage({
+    super.key,
+    required this.title,
+    required this.date,
+    required this.keyword,
+    required this.location,
+    required this.category,
+    required this.price,
+    required this.result,
+  });
+
+  static const Color darkText = ProfileScreen.darkText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: simpleAppBar('History Detail'),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: whiteCardDecoration(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: darkText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                date,
+                style: GoogleFonts.inter(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 20),
+              _detailItem('Keyword', keyword),
+              _detailItem('Location', location),
+              _detailItem('Category', category),
+              _detailItem('Max Price', price),
+              const SizedBox(height: 16),
+              Text(
+                'What user did',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: darkText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                result,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  height: 1.5,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _detailItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: darkText,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.inter(
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
 
