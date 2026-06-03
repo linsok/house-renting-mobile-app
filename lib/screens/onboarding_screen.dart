@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:house_renting_mobile/main.dart';
 
 class OnboardingScreen extends StatelessWidget {
   final VoidCallback onGetStarted;
@@ -253,7 +254,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
               height: 54,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MainScreen(),
+                    ),
+                        (route) => false,
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
@@ -435,7 +442,13 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 54,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MainScreen(),
+                    ),
+                        (route) => false,
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,

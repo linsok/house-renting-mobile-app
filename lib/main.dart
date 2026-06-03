@@ -6,7 +6,7 @@ import 'screens/saved_screen.dart';
 import 'screens/rent_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/notification_screen.dart';
-
+import 'package:house_renting_mobile/screens/onboarding_screen.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.grey[50],
       ),
-      home: const MainScreen(),
+      home: const AuthWelcomeScreen(),
     );
   }
 }
