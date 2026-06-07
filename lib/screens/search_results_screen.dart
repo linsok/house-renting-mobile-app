@@ -1053,6 +1053,43 @@ class PropertyDetailsScreen extends StatefulWidget {
 }
 
 class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
+  final PageController _imagePageController = PageController();
+  int _currentImageIndex = 0;
+
+  List<String> get _propertyImages {
+    final images = widget.property.imageUrls
+        .where((url) => url.trim().isNotEmpty)
+        .toList();
+
+    if (images.isNotEmpty) {
+      return images;
+    }
+
+    if (widget.imageUrl.trim().isNotEmpty) {
+      return [widget.imageUrl];
+    }
+
+    return ['https://via.placeholder.com/600x400'];
+  }
+
+  @override
+  void dispose() {
+    _imagePageController.dispose();
+    super.dispose();
+  }
+
+  void _openImageViewer(int initialIndex) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PropertyImageViewerScreen(
+          images: _propertyImages,
+          initialIndex: initialIndex,
+        ),
+      ),
+    );
+  }
+
   void _showSuccessMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1491,6 +1528,163 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
     );
   }
 
+  Widget _imageSlider() {
+    final images = _propertyImages;
+
+    return Stack(
+      children: [
+        SizedBox(
+          height: 310,
+          width: double.infinity,
+          child: PageView.builder(
+            controller: _imagePageController,
+            itemCount: images.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentImageIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              final imageUrl = images[index];
+
+              return GestureDetector(
+                onTap: () => _openImageViewer(index),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) {
+                      return child;
+                    }
+
+                    return Container(
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey[300],
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: 44,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+
+        Positioned(
+          top: 44,
+          left: 16,
+          child: CircleAvatar(
+            backgroundColor: Colors.white,
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(
+                Icons.arrow_back,
+                color: Color(0xFF1F2937),
+              ),
+            ),
+          ),
+        ),
+
+        Positioned(
+          top: 48,
+          right: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.zoom_in,
+                  color: Colors.white,
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Tap to zoom',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        if (images.length > 1)
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                images.length,
+                    (index) {
+                  final isActive = index == _currentImageIndex;
+
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: isActive ? 18 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+
+        if (images.length > 1)
+          Positioned(
+            right: 16,
+            bottom: 14,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '${_currentImageIndex + 1}/${images.length}',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final property = widget.property;
@@ -1504,45 +1698,7 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // PROPERTY IMAGE
-                Stack(
-                  children: [
-                    SizedBox(
-                      height: 310,
-                      width: double.infinity,
-                      child: Image.network(
-                        widget.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: const Center(
-                              child: Icon(
-                                Icons.image_not_supported,
-                                size: 44,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    Positioned(
-                      top: 44,
-                      left: 16,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.white,
-                        child: IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: Color(0xFF1F2937),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                _imageSlider(),
 
                 Padding(
                   padding: const EdgeInsets.all(18),
@@ -1711,7 +1867,6 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
             ),
           ),
 
-          // BOTTOM BOOK AND RENT BUTTONS
           Positioned(
             left: 16,
             right: 16,
@@ -1775,6 +1930,187 @@ class _PropertyDetailsScreenState extends State<PropertyDetailsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class PropertyImageViewerScreen extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+
+  const PropertyImageViewerScreen({
+    super.key,
+    required this.images,
+    required this.initialIndex,
+  });
+
+  @override
+  State<PropertyImageViewerScreen> createState() =>
+      _PropertyImageViewerScreenState();
+}
+
+class _PropertyImageViewerScreenState extends State<PropertyImageViewerScreen> {
+  late final PageController _pageController;
+  late int _currentIndex;
+
+  final TransformationController _transformationController =
+  TransformationController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  void _resetZoom() {
+    _transformationController.value = Matrix4.identity();
+  }
+
+  void _zoomIn() {
+    _transformationController.value = Matrix4.identity()..scale(2.0);
+  }
+
+  void _zoomOut() {
+    _transformationController.value = Matrix4.identity();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final images = widget.images;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            itemCount: images.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+
+              _resetZoom();
+            },
+            itemBuilder: (context, index) {
+              final imageUrl = images[index];
+
+              return Center(
+                child: InteractiveViewer(
+                  transformationController: _transformationController,
+                  minScale: 1.0,
+                  maxScale: 5.0,
+                  panEnabled: true,
+                  scaleEnabled: true,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) {
+                        return child;
+                      }
+
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          color: Colors.white,
+                          size: 50,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+
+          Positioned(
+            top: 44,
+            left: 16,
+            child: CircleAvatar(
+              backgroundColor: Colors.white.withValues(alpha: 0.15),
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+
+          Positioned(
+            top: 50,
+            right: 18,
+            child: Text(
+              '${_currentIndex + 1}/${images.length}',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 32,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _viewerButton(
+                  icon: Icons.zoom_out,
+                  onTap: _zoomOut,
+                ),
+                const SizedBox(width: 16),
+                _viewerButton(
+                  icon: Icons.center_focus_strong,
+                  onTap: _resetZoom,
+                ),
+                const SizedBox(width: 16),
+                _viewerButton(
+                  icon: Icons.zoom_in,
+                  onTap: _zoomIn,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _viewerButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return CircleAvatar(
+      radius: 26,
+      backgroundColor: Colors.white.withValues(alpha: 0.15),
+      child: IconButton(
+        onPressed: onTap,
+        icon: Icon(
+          icon,
+          color: Colors.white,
+        ),
       ),
     );
   }

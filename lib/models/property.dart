@@ -8,6 +8,7 @@ class Property {
   final int bathrooms;
   final String propertyType;
   final String imageUrl;
+  final List<String> imageUrls;
   final double rating;
   final bool isFavorited;
   final String description;
@@ -28,6 +29,7 @@ class Property {
     required this.bathrooms,
     required this.propertyType,
     required this.imageUrl,
+    this.imageUrls = const [],
     required this.rating,
     this.isFavorited = false,
     this.description = '',
@@ -40,25 +42,82 @@ class Property {
   });
 
   factory Property.fromJson(Map<String, dynamic> json) {
+    final amenities = json['amenities'] is List ? json['amenities'] as List : [];
+
+    bool hasAmenity(String keyword) {
+      return amenities.any((item) {
+        final text = item.toString().toLowerCase();
+        return text.contains(keyword.toLowerCase());
+      });
+    }
+
+    double toDouble(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is num) return value.toDouble();
+      return double.tryParse(value.toString()) ?? 0.0;
+    }
+
+    int toInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      return int.tryParse(value.toString()) ?? 0;
+    }
+
+    final rawImages = json['images'] is List ? json['images'] as List : [];
+
+    final imageUrls = rawImages
+        .map((item) {
+      if (item is Map && item['image_url'] != null) {
+        return item['image_url'].toString();
+      }
+
+      return '';
+    })
+        .where((url) => url.trim().isNotEmpty)
+        .toList();
+
+    final mainImage = (json['main_image'] ??
+        json['image_url'] ??
+        json['image'] ??
+        '')
+        .toString();
+
+    if (mainImage.trim().isNotEmpty && !imageUrls.contains(mainImage)) {
+      imageUrls.insert(0, mainImage);
+    }
+
+    final finalImageUrl = imageUrls.isNotEmpty
+        ? imageUrls.first
+        : 'https://via.placeholder.com/300x200';
+
     return Property(
-      id: json['id'] ?? 0,
-      title: json['title'] ?? '',
-      location: json['city'] ?? json['location'] ?? '',
-      address: json['address'] ?? '',
-      price: (json['rent_price'] ?? json['price'] ?? 0).toDouble(),
-      bedrooms: json['bedrooms'] ?? 0,
-      bathrooms: json['bathrooms'] ?? 0,
-      propertyType: json['property_type'] ?? '',
-      imageUrl: json['image_url'] ?? json['image'] ?? 'https://via.placeholder.com/300x200',
-      rating: (json['rating'] ?? 0).toDouble(),
-      isFavorited: json['is_favorited'] ?? false,
-      description: json['description'] ?? '',
-      area: (json['area_sqm'] ?? json['area'] ?? 0).toDouble(),
-      isFurnished: json['is_furnished'] ?? false,
-      parkingAvailable: json['parking_available'] ?? false,
-      swimmingPool: json['swimming_pool'] ?? false,
-      airConditioning: json['air_conditioning'] ?? false,
-      gym: json['gym'] ?? false,
+      id: toInt(json['id']),
+      title: (json['title'] ?? '').toString(),
+      location: (json['city'] ?? json['location'] ?? '').toString(),
+      address: (json['address'] ?? '').toString(),
+      price: toDouble(
+        json['price_per_month'] ??
+            json['rent_price'] ??
+            json['price'] ??
+            0,
+      ),
+      bedrooms: toInt(json['bedrooms']),
+      bathrooms: toInt(json['bathrooms']),
+      propertyType: (json['property_type'] ?? '').toString(),
+      imageUrl: finalImageUrl,
+      imageUrls: imageUrls,
+      rating: toDouble(json['rating']),
+      isFavorited: json['is_favorited'] == true,
+      description: (json['description'] ?? '').toString(),
+      area: toDouble(json['area_size'] ?? json['area_sqm'] ?? json['area']),
+      isFurnished: json['is_furnished'] == true || hasAmenity('furnished'),
+      parkingAvailable:
+      json['parking_available'] == true || hasAmenity('parking'),
+      swimmingPool: json['swimming_pool'] == true || hasAmenity('pool'),
+      airConditioning:
+      json['air_conditioning'] == true || hasAmenity('air conditioning'),
+      gym: json['gym'] == true || hasAmenity('gym'),
     );
   }
 
@@ -73,10 +132,11 @@ class Property {
       'bathrooms': bathrooms,
       'property_type': propertyType,
       'image_url': imageUrl,
+      'image_urls': imageUrls,
       'rating': rating,
       'is_favorited': isFavorited,
       'description': description,
-      'area_sqm': area,
+      'area_size': area,
       'is_furnished': isFurnished,
       'parking_available': parkingAvailable,
       'swimming_pool': swimmingPool,
@@ -95,6 +155,7 @@ class Property {
     int? bathrooms,
     String? propertyType,
     String? imageUrl,
+    List<String>? imageUrls,
     double? rating,
     bool? isFavorited,
     String? description,
@@ -115,6 +176,7 @@ class Property {
       bathrooms: bathrooms ?? this.bathrooms,
       propertyType: propertyType ?? this.propertyType,
       imageUrl: imageUrl ?? this.imageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
       rating: rating ?? this.rating,
       isFavorited: isFavorited ?? this.isFavorited,
       description: description ?? this.description,
@@ -128,120 +190,4 @@ class Property {
   }
 }
 
-// Sample data based on housing-analyzer-main content
-List<Property> sampleProperties = [
-  Property(
-    id: 1,
-    title: "The Croft",
-    location: "Preston Rd. Birmingham",
-    address: "123 Preston Road",
-    price: 400000,
-    bedrooms: 4,
-    bathrooms: 2,
-    propertyType: "House",
-    imageUrl: "assets/images/012624_ParisForino_WestEnd_Garruppo_015.webp",
-    rating: 4.5,
-    description: "Beautiful modern house with swimming pool",
-    area: 250.0,
-    isFurnished: true,
-    parkingAvailable: true,
-    swimmingPool: true,
-    airConditioning: true,
-    gym: false,
-  ),
-  Property(
-    id: 2,
-    title: "Hillcrest",
-    location: "Hill Side, Birmingham",
-    address: "456 Hill Side Avenue",
-    price: 390000,
-    bedrooms: 3,
-    bathrooms: 2,
-    propertyType: "House",
-    imageUrl: "assets/images/BradRamseyInteriors_credit_CarolineSharpnack-dee35c1fab554898af7c549697c2f592.jpg",
-    rating: 4.3,
-    description: "Cozy family home in quiet neighborhood",
-    area: 180.0,
-    isFurnished: false,
-    parkingAvailable: true,
-    swimmingPool: false,
-    airConditioning: true,
-    gym: false,
-  ),
-  Property(
-    id: 3,
-    title: "Orchard House",
-    location: "Preston Rd. Birmingham",
-    address: "789 Preston Road",
-    price: 500000,
-    bedrooms: 4,
-    bathrooms: 3,
-    propertyType: "House",
-    imageUrl: "assets/images/Guest-bedroom-design-ideas-Studio-McGee.jpeg",
-    rating: 4.7,
-    description: "Luxurious modern house with all amenities",
-    area: 320.0,
-    isFurnished: true,
-    parkingAvailable: true,
-    swimmingPool: true,
-    airConditioning: true,
-    gym: true,
-  ),
-  Property(
-    id: 4,
-    title: "High Field",
-    location: "Preston Rd. Birmingham",
-    address: "321 High Field Lane",
-    price: 350000,
-    bedrooms: 2,
-    bathrooms: 2,
-    propertyType: "House",
-    imageUrl: "assets/images/pacific-northwest-home-tour-great-room-0820-14d61b428237459b9e996c769ae92dd0.jpg",
-    rating: 4.2,
-    description: "Compact and efficient modern home",
-    area: 150.0,
-    isFurnished: false,
-    parkingAvailable: true,
-    swimmingPool: false,
-    airConditioning: true,
-    gym: false,
-  ),
-  Property(
-    id: 5,
-    title: "Modern Downtown Apartment",
-    location: "Phnom Penh",
-    address: "123 Street 240",
-    price: 1500,
-    bedrooms: 2,
-    bathrooms: 1,
-    propertyType: "Apartment",
-    imageUrl: "assets/images/pacific-northwest-home-tour-great-room-0820-14d61b428237459b9e996c769ae92dd0.jpg",
-    rating: 4.5,
-    description: "Modern apartment in city center",
-    area: 85.0,
-    isFurnished: true,
-    parkingAvailable: false,
-    swimmingPool: false,
-    airConditioning: true,
-    gym: true,
-  ),
-  Property(
-    id: 6,
-    title: "Cozy Studio Near Park",
-    location: "Sen Sok, Phnom Penh",
-    address: "456 Park Avenue",
-    price: 1200,
-    bedrooms: 1,
-    bathrooms: 1,
-    propertyType: "Studio",
-    imageUrl: "assets/images/pexels-fotoaibe-1669799.jpg",
-    rating: 4.2,
-    description: "Perfect studio for singles",
-    area: 45.0,
-    isFurnished: false,
-    parkingAvailable: true,
-    swimmingPool: false,
-    airConditioning: true,
-    gym: false,
-  ),
-];
+List<Property> sampleProperties = [];

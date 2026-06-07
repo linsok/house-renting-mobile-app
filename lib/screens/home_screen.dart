@@ -4,6 +4,8 @@ import 'package:house_renting_mobile/models/property.dart';
 import 'package:house_renting_mobile/screens/search_results_screen.dart';
 import 'package:house_renting_mobile/widgets/property_card.dart';
 
+import '../services/property_service.dart';
+
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onSeeAll;
 
@@ -17,10 +19,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String selectedLocation = 'Toul Kork';
-  String selectedCategory = 'House';
+  String selectedCategory = 'All';
 
   final TextEditingController _searchController = TextEditingController();
+
+  bool isLoading = true;
+  String? errorMessage;
+
+  List<Property> allProperties = [];
+  List<Property> bestForYouProperties = [];
+  List<Property> popularProperties = [];
 
   double maxPrice = 5000;
   int minBedrooms = 0;
@@ -32,12 +40,17 @@ class _HomeScreenState extends State<HomeScreen> {
   bool acOnly = false;
   bool gymOnly = false;
 
-  final List<String> categories = ['House', 'Apartment', 'Office Space', 'Shop'];
+  final List<String> categories = [
+    'All',
+    'House',
+    'Apartment',
+    'Condo',
+    'Office Space',
+    'Shop',
+    'Studio',
+  ];
 
-  List<Property> bestForYouProperties = [];
-  List<Property> popularProperties = [];
-
-  final List<String> propertyImages = [
+  final List<String> fallbackImages = [
     'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200',
     'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=1200',
     'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
@@ -62,15 +75,37 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _loadProperties() {
-    bestForYouProperties = sampleProperties.take(2).toList();
-    popularProperties = sampleProperties.skip(2).take(4).toList();
+  Future<void> _loadProperties() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final data = await PropertyService.getProperties();
+
+      if (!mounted) return;
+
+      setState(() {
+        allProperties = data;
+        isLoading = false;
+      });
+
+      _applyFilter();
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        errorMessage = e.toString();
+        isLoading = false;
+      });
+    }
   }
 
   void _applyFilter() {
     final keyword = _searchController.text.trim().toLowerCase();
 
-    final filtered = sampleProperties.where((property) {
+    final filtered = allProperties.where((property) {
       final matchSearch = keyword.isEmpty ||
           property.title.toLowerCase().contains(keyword) ||
           property.location.toLowerCase().contains(keyword) ||
@@ -103,15 +138,17 @@ class _HomeScreenState extends State<HomeScreen> {
           matchGym;
     }).toList();
 
+    if (!mounted) return;
+
     setState(() {
       bestForYouProperties = filtered.take(2).toList();
-      popularProperties = filtered.skip(2).take(4).toList();
+      popularProperties = filtered.skip(2).take(6).toList();
     });
   }
 
   void _resetFilter() {
     setState(() {
-      selectedCategory = 'House';
+      selectedCategory = 'All';
       maxPrice = 5000;
       minBedrooms = 0;
       minBathrooms = 0;
@@ -120,23 +157,29 @@ class _HomeScreenState extends State<HomeScreen> {
       poolOnly = false;
       acOnly = false;
       gymOnly = false;
+      _searchController.clear();
     });
 
     _applyFilter();
   }
 
-  String _getImageUrl(int index) {
-    return propertyImages[index % propertyImages.length];
+  String _getImageUrl(Property property, int index) {
+    if (property.imageUrl.trim().isNotEmpty &&
+        !property.imageUrl.contains('via.placeholder.com')) {
+      return property.imageUrl;
+    }
+
+    return fallbackImages[index % fallbackImages.length];
   }
 
   String _getOwnerName(int index) {
     final owners = [
-      'Mr. Dara',
-      'Ms. Sreynich',
-      'Mr. Visal',
-      'Ms. Sophea',
-      'Mr. Rithy',
-      'Ms. Kanika',
+      'Admin Team',
+      'Property Manager',
+      'House Renting Support',
+      'Rental Owner',
+      'Listing Manager',
+      'Customer Support',
     ];
 
     return owners[index % owners.length];
@@ -155,7 +198,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return phones[index % phones.length];
   }
 
-  String _getSize(int index) {
+  String _getSize(Property property, int index) {
+    if (property.area > 0) {
+      return '${property.area.toStringAsFixed(0)} m²';
+    }
+
     final sizes = [
       '65 m²',
       '82 m²',
@@ -172,26 +219,30 @@ class _HomeScreenState extends State<HomeScreen> {
     return index % 2 == 0;
   }
 
-  bool _hasParking(int index) {
-    return index % 3 != 0;
+  bool _hasParking(Property property, int index) {
+    return property.parkingAvailable || index % 3 != 0;
   }
 
   bool _hasSecurity(int index) {
     return index % 2 != 0;
   }
 
-  bool _hasAirConditioner(int index) {
-    return index % 3 != 1;
+  bool _hasAirConditioner(Property property, int index) {
+    return property.airConditioning || index % 3 != 1;
   }
 
   String _getDescription(Property property) {
+    if (property.description.trim().isNotEmpty) {
+      return property.description;
+    }
+
     return '${property.title} is a comfortable and modern property located in ${property.location}. '
         'It is suitable for students, workers, small families, or anyone looking for a clean and safe place to stay. '
         'The property has good access to nearby shops, transportation, restaurants, and daily living services.';
   }
 
   void _openPropertyDetails(Property property) {
-    final int index = sampleProperties.indexWhere((item) => item.id == property.id);
+    final int index = allProperties.indexWhere((item) => item.id == property.id);
     final int safeIndex = index == -1 ? 0 : index;
 
     Navigator.push(
@@ -199,14 +250,14 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(
         builder: (context) => PropertyDetailsScreen(
           property: property,
-          imageUrl: _getImageUrl(safeIndex),
+          imageUrl: _getImageUrl(property, safeIndex),
           ownerName: _getOwnerName(safeIndex),
           ownerPhone: _getOwnerPhone(safeIndex),
-          size: _getSize(safeIndex),
+          size: _getSize(property, safeIndex),
           hasWifi: _hasWifi(safeIndex),
-          hasParking: _hasParking(safeIndex),
+          hasParking: _hasParking(property, safeIndex),
           hasSecurity: _hasSecurity(safeIndex),
-          hasAirConditioner: _hasAirConditioner(safeIndex),
+          hasAirConditioner: _hasAirConditioner(property, safeIndex),
           description: _getDescription(property),
         ),
       ),
@@ -245,14 +296,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 20),
+
                     DropdownButtonFormField<String>(
                       value: selectedCategory,
                       decoration: const InputDecoration(
                         labelText: 'Category',
                         border: OutlineInputBorder(),
                       ),
-                      items: ['All', ...categories].map((item) {
+                      items: categories.map((item) {
                         return DropdownMenuItem(
                           value: item,
                           child: Text(item),
@@ -264,7 +317,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                     ),
+
                     const SizedBox(height: 20),
+
                     TextFormField(
                       initialValue: maxPrice.toInt().toString(),
                       keyboardType: TextInputType.number,
@@ -281,7 +336,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                     ),
+
                     const SizedBox(height: 12),
+
                     DropdownButtonFormField<int>(
                       value: minBedrooms,
                       decoration: const InputDecoration(
@@ -300,7 +357,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                     ),
+
                     const SizedBox(height: 12),
+
                     DropdownButtonFormField<int>(
                       value: minBathrooms,
                       decoration: const InputDecoration(
@@ -319,7 +378,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                     ),
+
                     const SizedBox(height: 12),
+
                     CheckboxListTile(
                       value: furnishedOnly,
                       title: const Text('Furnished only'),
@@ -329,6 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                     ),
+
                     CheckboxListTile(
                       value: parkingOnly,
                       title: const Text('Parking available'),
@@ -338,6 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                     ),
+
                     CheckboxListTile(
                       value: poolOnly,
                       title: const Text('Swimming pool'),
@@ -347,6 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                     ),
+
                     CheckboxListTile(
                       value: acOnly,
                       title: const Text('Air conditioning'),
@@ -356,6 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                     ),
+
                     CheckboxListTile(
                       value: gymOnly,
                       title: const Text('Gym'),
@@ -365,14 +430,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                     ),
+
                     const SizedBox(height: 16),
+
                     Row(
                       children: [
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
                               setModalState(() {
-                                selectedCategory = 'House';
+                                selectedCategory = 'All';
                                 maxPrice = 5000;
                                 minBedrooms = 0;
                                 minBathrooms = 0;
@@ -389,13 +456,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: const Text('Reset'),
                           ),
                         ),
+
                         const SizedBox(width: 12),
+
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
                               _applyFilter();
                               Navigator.pop(context);
                             },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1E3A8A),
+                              foregroundColor: Colors.white,
+                            ),
                             child: const Text('Apply'),
                           ),
                         ),
@@ -411,8 +484,276 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildLoadingBody() {
+    return const Center(
+      child: CircularProgressIndicator(),
+    );
+  }
+
+  Widget _buildErrorBody() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Colors.red,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              errorMessage ?? 'Something went wrong.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadProperties,
+              child: const Text('Try Again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHomeBody() {
+    return RefreshIndicator(
+      onRefresh: _loadProperties,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _searchBox(),
+
+              const SizedBox(height: 24),
+
+              _sectionHeader(
+                title: 'Category',
+                showSeeAll: true,
+              ),
+
+              const SizedBox(height: 12),
+
+              _categoryChips(),
+
+              const SizedBox(height: 24),
+
+              _sectionHeader(title: 'Best For You'),
+
+              const SizedBox(height: 12),
+
+              _propertyHorizontalList(
+                properties: bestForYouProperties,
+                emptyText: 'No properties found',
+              ),
+
+              const SizedBox(height: 24),
+
+              _sectionHeader(title: 'Popular Properties'),
+
+              const SizedBox(height: 12),
+
+              _propertyHorizontalList(
+                properties: popularProperties,
+                emptyText: 'No popular properties found',
+              ),
+
+              const SizedBox(height: 24),
+
+              _sectionHeader(title: 'Our Achievements'),
+
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  _buildStatCard('${allProperties.length}+', 'Properties'),
+                  _buildStatCard('800+', 'Clients'),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  _buildStatCard('350+', 'Rented'),
+                  _buildStatCard('4.8★', 'Rating'),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _searchBox() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search Properties',
+          hintStyle: GoogleFonts.inter(color: Colors.grey[500]),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: Color(0xFF1E3A8A),
+          ),
+          suffixIcon: IconButton(
+            icon: const Icon(
+              Icons.tune,
+              color: Color(0xFF1E3A8A),
+            ),
+            onPressed: _openFilterSheet,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader({
+    required String title,
+    bool showSeeAll = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF1F2937),
+          ),
+        ),
+        if (showSeeAll)
+          TextButton(
+            onPressed: widget.onSeeAll,
+            child: Text(
+              'See All',
+              style: GoogleFonts.inter(
+                color: const Color(0xFF1E3A8A),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _categoryChips() {
+    return SizedBox(
+      height: 40,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length,
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          final isSelected = category == selectedCategory;
+
+          return Padding(
+            padding: EdgeInsets.only(
+              right: index == categories.length - 1 ? 0 : 12,
+            ),
+            child: FilterChip(
+              label: Text(category),
+              selected: isSelected,
+              onSelected: (_) {
+                setState(() {
+                  selectedCategory = category;
+                });
+                _applyFilter();
+              },
+              backgroundColor: Colors.white,
+              selectedColor: const Color(0xFF1E3A8A),
+              labelStyle: GoogleFonts.inter(
+                color: isSelected ? Colors.white : const Color(0xFF1F2937),
+              ),
+              side: BorderSide(
+                color: isSelected
+                    ? const Color(0xFF1E3A8A)
+                    : Colors.grey[300]!,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _propertyHorizontalList({
+    required List<Property> properties,
+    required String emptyText,
+  }) {
+    return SizedBox(
+      height: 235,
+      child: properties.isEmpty
+          ? Center(
+        child: Text(
+          emptyText,
+          style: GoogleFonts.inter(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      )
+          : ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: properties.length,
+        itemBuilder: (context, index) {
+          final property = properties[index];
+
+          return Container(
+            width: 280,
+            margin: const EdgeInsets.only(right: 12),
+            child: PropertyCard(
+              property: property,
+              height: 235,
+              onTap: () => _openPropertyDetails(property),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    Widget body;
+
+    if (isLoading) {
+      body = _buildLoadingBody();
+    } else if (errorMessage != null) {
+      body = _buildErrorBody();
+    } else {
+      body = _buildHomeBody();
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -427,201 +768,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search Properties',
-                    hintStyle: GoogleFonts.inter(color: Colors.grey[500]),
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: Color(0xFF1E3A8A),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: const Icon(
-                        Icons.tune,
-                        color: Color(0xFF1E3A8A),
-                      ),
-                      onPressed: _openFilterSheet,
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Category',
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1F2937),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: widget.onSeeAll,
-                    child: Text(
-                      'See All',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF1E3A8A),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 40,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: categories.length,
-                  itemBuilder: (context, index) {
-                    final category = categories[index];
-                    final isSelected = category == selectedCategory;
-
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        right: index == categories.length - 1 ? 0 : 12,
-                      ),
-                      child: FilterChip(
-                        label: Text(category),
-                        selected: isSelected,
-                        onSelected: (_) {
-                          setState(() {
-                            selectedCategory = category;
-                          });
-                          _applyFilter();
-                        },
-                        backgroundColor: Colors.white,
-                        selectedColor: const Color(0xFF1E3A8A),
-                        labelStyle: GoogleFonts.inter(
-                          color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF1F2937),
-                        ),
-                        side: BorderSide(
-                          color: isSelected
-                              ? const Color(0xFF1E3A8A)
-                              : Colors.grey[300]!,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Best For You',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 235,
-                child: bestForYouProperties.isEmpty
-                    ? const Center(child: Text('No properties found'))
-                    : ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: bestForYouProperties.length,
-                  itemBuilder: (context, index) {
-                    final property = bestForYouProperties[index];
-
-                    return Container(
-                      width: 280,
-                      margin: const EdgeInsets.only(right: 12),
-                      child: PropertyCard(
-                        property: property,
-                        height: 235,
-                        onTap: () => _openPropertyDetails(property),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Popular Properties',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 235,
-                child: popularProperties.isEmpty
-                    ? const Center(child: Text('No popular properties found'))
-                    : ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: popularProperties.length,
-                  itemBuilder: (context, index) {
-                    final property = popularProperties[index];
-
-                    return Container(
-                      width: 280,
-                      margin: const EdgeInsets.only(right: 12),
-                      child: PropertyCard(
-                        property: property,
-                        height: 235,
-                        onTap: () => _openPropertyDetails(property),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Our Achievements',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _buildStatCard('1.2K+', 'Properties'),
-                  _buildStatCard('800+', 'Clients'),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _buildStatCard('350+', 'Rented'),
-                  _buildStatCard('4.8★', 'Rating'),
-                ],
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
+      body: body,
     );
   }
 
@@ -635,7 +782,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
