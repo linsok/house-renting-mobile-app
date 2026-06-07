@@ -4,6 +4,8 @@ import 'package:house_renting_mobile/models/property.dart';
 import 'package:house_renting_mobile/screens/search_results_screen.dart';
 import 'package:house_renting_mobile/widgets/property_card.dart';
 
+import '../services/saved_property_service.dart';
+
 import '../services/property_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -73,6 +75,32 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveProperty(Property property) async {
+    try {
+      await SavedPropertyService.saveProperty(property.id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${property.title} saved successfully.'),
+          backgroundColor: const Color(0xFF1E3A8A),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _loadProperties() async {
@@ -735,6 +763,7 @@ class _HomeScreenState extends State<HomeScreen> {
               property: property,
               height: 235,
               onTap: () => _openPropertyDetails(property),
+              onFavoriteTap: () => _saveProperty(property),
             ),
           );
         },

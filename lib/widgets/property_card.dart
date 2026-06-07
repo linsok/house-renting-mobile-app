@@ -33,7 +33,7 @@ class PropertyCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -44,7 +44,6 @@ class PropertyCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Property Image
               SizedBox(
                 height: imageHeight,
                 width: double.infinity,
@@ -56,58 +55,64 @@ class PropertyCard extends StatelessWidget {
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(
-                            color: Colors.grey[200],
-                            child: const Icon(
-                              Icons.image,
-                              size: 40,
-                              color: Colors.grey,
-                            ),
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Icon(
+                            Icons.image,
+                            size: 40,
+                            color: Colors.grey,
                           ),
+                        );
+                      },
                     )
                         : CachedNetworkImage(
                       imageUrl: property.imageUrl,
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[200],
-                        child: const Icon(
-                          Icons.image,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                      ),
+                      placeholder: (context, url) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      },
+                      errorWidget: (context, url, error) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Icon(
+                            Icons.image,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
                     ),
 
-                    // Favorite Button
                     Positioned(
                       top: 8,
                       right: 8,
                       child: GestureDetector(
-                        onTap: onFavoriteTap,
+                        onTap: () {
+                          onFavoriteTap?.call();
+                        },
                         child: Container(
-                          width: 32,
-                          height: 32,
+                          width: 34,
+                          height: 34,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.92),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             property.isFavorited
                                 ? Icons.favorite
                                 : Icons.favorite_border,
-                            size: 18,
+                            size: 19,
                             color: property.isFavorited
                                 ? Colors.red
-                                : Colors.grey[600],
+                                : Colors.grey[700],
                           ),
                         ),
                       ),
@@ -116,14 +121,12 @@ class PropertyCard extends StatelessWidget {
                 ),
               ),
 
-              // Property Details
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Property Name
                       Text(
                         property.title,
                         style: const TextStyle(
@@ -137,7 +140,6 @@ class PropertyCard extends StatelessWidget {
 
                       const SizedBox(height: 2),
 
-                      // Location
                       Row(
                         children: [
                           Icon(
@@ -162,7 +164,6 @@ class PropertyCard extends StatelessWidget {
 
                       const SizedBox(height: 4),
 
-                      // Bedrooms and Bathrooms
                       Row(
                         children: [
                           if (property.bedrooms > 0) ...[
@@ -212,7 +213,6 @@ class PropertyCard extends StatelessWidget {
 
                       const Spacer(),
 
-                      // Price
                       Text(
                         '\$${property.price.toStringAsFixed(0).replaceAllMapped(
                           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
