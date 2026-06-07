@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:house_renting_mobile/screens/onboarding_screen.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../services/auth_service.dart';
+import '../services/profile_service.dart';
+import 'onboarding_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,30 +17,132 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String name = 'John Doe';
-  String email = 'john.doe@example.com';
-  String phone = '+1 234 567 8900';
-  String password = '';
+  String fullName = '';
+  String email = '';
+  String phone = '';
+  String address = '';
+  String role = '';
+  bool isBlocked = false;
   String photoUrl = '';
+
+  bool isLoading = true;
+  String? errorMessage;
 
   static const Color primaryColor = ProfileScreen.primaryColor;
   static const Color darkText = ProfileScreen.darkText;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final data = await ProfileService.getMyProfile();
+
+      if (!mounted) return;
+
+      setState(() {
+        fullName = (data['full_name'] ?? data['username'] ?? '').toString();
+        email = (data['email'] ?? '').toString();
+        phone = (data['phone'] ?? '').toString();
+        address = (data['address'] ?? '').toString();
+        role = (data['role'] ?? 'user').toString();
+        isBlocked = data['is_blocked'] == true;
+        photoUrl = (data['profile_image_url'] ?? '').toString();
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        errorMessage = e.toString();
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _logout() async {
+    await AuthService.logout();
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AuthWelcomeScreen(),
+      ),
+          (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: simpleAppBar('My Profile'),
-      body: SingleChildScrollView(
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Colors.red,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                errorMessage!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadProfile,
+                child: const Text('Try Again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadProfile,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _profileInfoCard(),
             const SizedBox(height: 24),
-            _sectionTitle('All dashboard info'),
+            _sectionTitle('Account Info'),
             const SizedBox(height: 12),
-            _dashboardCard(),
+            _accountInfoCard(),
             const SizedBox(height: 24),
             _sectionTitle('Settings'),
             const SizedBox(height: 12),
@@ -60,37 +165,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _profileInfoCard() {
+    final displayName = fullName.trim().isNotEmpty ? fullName : 'User';
+    final displayPhone = phone.trim().isNotEmpty ? phone : 'No phone number';
+
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: _cardDecoration(),
       child: Column(
         children: [
           CircleAvatar(
-            radius: 40,
+            radius: 42,
             backgroundColor: primaryColor,
-            backgroundImage: photoUrl.trim().isNotEmpty
-                ? NetworkImage(photoUrl.trim())
-                : null,
+            backgroundImage:
+            photoUrl.trim().isNotEmpty ? NetworkImage(photoUrl.trim()) : null,
             child: photoUrl.trim().isEmpty
                 ? const Icon(
               Icons.person,
-              size: 40,
+              size: 42,
               color: Colors.white,
             )
                 : null,
           ),
           const SizedBox(height: 16),
           Text(
-            name,
+            displayName,
+            textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              fontSize: 20,
+              fontSize: 21,
               fontWeight: FontWeight.bold,
               color: darkText,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             email,
+            textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 14,
               color: Colors.grey[600],
@@ -98,13 +208,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            phone,
+            displayPhone,
+            textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 14,
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          _statusChip(),
+          const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -129,201 +242,117 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _statusChip() {
+    final statusText = isBlocked ? 'Blocked' : 'Active';
+    final statusColor = isBlocked ? Colors.red : Colors.green;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: statusColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '${role.toUpperCase()} • $statusText',
+        style: GoogleFonts.inter(
+          color: statusColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _accountInfoCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
+        children: [
+          _infoRow(
+            icon: Icons.person_outline,
+            label: 'Full Name',
+            value: fullName.trim().isNotEmpty ? fullName : '-',
+          ),
+          _buildDivider(),
+          _infoRow(
+            icon: Icons.email_outlined,
+            label: 'Email',
+            value: email.trim().isNotEmpty ? email : '-',
+          ),
+          _buildDivider(),
+          _infoRow(
+            icon: Icons.phone_outlined,
+            label: 'Phone',
+            value: phone.trim().isNotEmpty ? phone : '-',
+          ),
+          _buildDivider(),
+          _infoRow(
+            icon: Icons.location_on_outlined,
+            label: 'Address',
+            value: address.trim().isNotEmpty ? address : '-',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: primaryColor, size: 22),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 90,
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: darkText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openEditProfile() async {
-    final result = await Navigator.push<Map<String, String>>(
+    final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => EditProfilePage(
-          name: name,
+          fullName: fullName,
           email: email,
           phone: phone,
-          password: password,
+          address: address,
           photoUrl: photoUrl,
         ),
       ),
     );
 
-    if (result != null) {
-      setState(() {
-        name = result['name'] ?? name;
-        email = result['email'] ?? email;
-        phone = result['phone'] ?? phone;
-        password = result['password'] ?? password;
-        photoUrl = result['photoUrl'] ?? photoUrl;
-      });
+    if (result == true) {
+      await _loadProfile();
     }
-  }
-
-  Widget _dashboardCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Overview',
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: darkText,
-            ),
-          ),
-          const SizedBox(height: 16),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.45,
-            children: [
-              _dashboardItem(
-                icon: Icons.home_outlined,
-                value: '12',
-                label: 'Listed Properties',
-                onTap: () {
-                  _openPage(
-                    const SimpleInfoPage(
-                      title: 'Listed Properties',
-                      icon: Icons.home_outlined,
-                      content:
-                      'Here you can view and manage all properties listed by your account.',
-                    ),
-                  );
-                },
-              ),
-              _dashboardItem(
-                icon: Icons.message_outlined,
-                value: '5',
-                label: 'Messages',
-                onTap: () {
-                  _openPage(
-                    const SimpleInfoPage(
-                      title: 'Messages',
-                      icon: Icons.message_outlined,
-                      content:
-                      'Here you can view messages from users, property owners, or customers.',
-                    ),
-                  );
-                },
-              ),
-              _dashboardItem(
-                icon: Icons.visibility_outlined,
-                value: '240',
-                label: 'Profile Views',
-                onTap: () {
-                  _openPage(
-                    const SimpleInfoPage(
-                      title: 'Profile Views',
-                      icon: Icons.visibility_outlined,
-                      content:
-                      'Here you can see how many users have viewed your profile.',
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Recent Activity',
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: darkText,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _activityItem(
-            Icons.search,
-            'Searched rental homes',
-            '15 minutes ago',
-          ),
-          _activityItem(
-            Icons.chat_bubble_outline,
-            'New message received',
-            '1 hour ago',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _dashboardItem({
-    required IconData icon,
-    required String value,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: primaryColor),
-            const Spacer(),
-            Text(
-              value,
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: darkText,
-              ),
-            ),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _activityItem(IconData icon, String title, String time) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: primaryColor.withValues(alpha: 0.08),
-            child: Icon(icon, color: primaryColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600,
-                  color: darkText,
-                ),
-              ),
-              Text(
-                time,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _menuCard() {
@@ -351,13 +380,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.help_outline,
             title: 'Help & Support',
             onTap: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AuthWelcomeScreen(),
-                ),
-                    (route) => false,
-              );
+              _openPage(const HelpSupportPage());
             },
           ),
           _buildDivider(),
@@ -401,14 +424,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AuthWelcomeScreen(),
-                  ),
-                      (route) => false,
-                );
+              onPressed: () async {
+                Navigator.pop(context);
+                await _logout();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
@@ -468,18 +486,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 class EditProfilePage extends StatefulWidget {
-  final String name;
+  final String fullName;
   final String email;
   final String phone;
-  final String password;
+  final String address;
   final String photoUrl;
 
   const EditProfilePage({
     super.key,
-    required this.name,
+    required this.fullName,
     required this.email,
     required this.phone,
-    required this.password,
+    required this.address,
     required this.photoUrl,
   });
 
@@ -491,48 +509,101 @@ class _EditProfilePageState extends State<EditProfilePage> {
   static const Color primaryColor = ProfileScreen.primaryColor;
   static const Color darkText = ProfileScreen.darkText;
 
-  late TextEditingController nameController;
+  late TextEditingController fullNameController;
   late TextEditingController emailController;
   late TextEditingController phoneController;
-  late TextEditingController passwordController;
-  late TextEditingController photoUrlController;
+  late TextEditingController addressController;
 
-  bool hidePassword = true;
+  XFile? selectedImage;
+  final ImagePicker imagePicker = ImagePicker();
+
+  bool isSaving = false;
 
   @override
   void initState() {
     super.initState();
 
-    nameController = TextEditingController(text: widget.name);
+    fullNameController = TextEditingController(text: widget.fullName);
     emailController = TextEditingController(text: widget.email);
     phoneController = TextEditingController(text: widget.phone);
-    passwordController = TextEditingController(text: widget.password);
-    photoUrlController = TextEditingController(text: widget.photoUrl);
+    addressController = TextEditingController(text: widget.address);
   }
 
   @override
   void dispose() {
-    nameController.dispose();
+    fullNameController.dispose();
     emailController.dispose();
     phoneController.dispose();
-    passwordController.dispose();
-    photoUrlController.dispose();
+    addressController.dispose();
     super.dispose();
   }
 
-  void _saveProfile() {
-    Navigator.pop(context, {
-      'name': nameController.text.trim(),
-      'email': emailController.text.trim(),
-      'phone': phoneController.text.trim(),
-      'password': passwordController.text.trim(),
-      'photoUrl': photoUrlController.text.trim(),
+  Future<void> _pickProfileImage() async {
+    final image = await imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (image == null) return;
+
+    setState(() {
+      selectedImage = image;
     });
+  }
+
+  ImageProvider? _getProfileImageProvider() {
+    if (selectedImage != null) {
+      return NetworkImage(selectedImage!.path);
+    }
+
+    if (widget.photoUrl.trim().isNotEmpty) {
+      return NetworkImage(widget.photoUrl.trim());
+    }
+
+    return null;
+  }
+
+  Future<void> _saveProfile() async {
+    setState(() {
+      isSaving = true;
+    });
+
+    try {
+      await ProfileService.updateProfileWithImage(
+        phone: phoneController.text.trim(),
+        address: addressController.text.trim(),
+        imageFile: selectedImage,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully.'),
+        ),
+      );
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSaving = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final photoUrl = photoUrlController.text.trim();
+    final imageProvider = _getProfileImageProvider();
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -544,77 +615,96 @@ class _EditProfilePageState extends State<EditProfilePage> {
           decoration: whiteCardDecoration(),
           child: Column(
             children: [
-              CircleAvatar(
-                radius: 45,
-                backgroundColor: primaryColor,
-                backgroundImage:
-                photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
-                child: photoUrl.isEmpty
-                    ? const Icon(
-                  Icons.person,
-                  color: Colors.white,
-                  size: 45,
-                )
-                    : null,
+              GestureDetector(
+                onTap: _pickProfileImage,
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    CircleAvatar(
+                      radius: 45,
+                      backgroundColor: primaryColor,
+                      backgroundImage: imageProvider,
+                      child: imageProvider == null
+                          ? const Icon(
+                        Icons.person,
+                        color: Colors.white,
+                        size: 45,
+                      )
+                          : null,
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: primaryColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                'Tap image to upload profile photo',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
               const SizedBox(height: 20),
+
               _inputField(
-                controller: nameController,
-                label: 'Name',
+                controller: fullNameController,
+                label: 'Full Name',
                 icon: Icons.person_outline,
+                enabled: false,
               ),
+
               const SizedBox(height: 14),
+
               _inputField(
                 controller: emailController,
                 label: 'Email',
                 icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
+                enabled: false,
               ),
+
               const SizedBox(height: 14),
+
               _inputField(
                 controller: phoneController,
-                label: 'Contact Number',
+                label: 'Phone Number',
                 icon: Icons.phone_outlined,
                 keyboardType: TextInputType.phone,
               ),
+
               const SizedBox(height: 14),
-              TextField(
-                controller: passwordController,
-                obscureText: hidePassword,
-                style: GoogleFonts.inter(),
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  labelStyle: GoogleFonts.inter(),
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      hidePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        hidePassword = !hidePassword;
-                      });
-                    },
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
+
               _inputField(
-                controller: photoUrlController,
-                label: 'Photo URL',
-                icon: Icons.image_outlined,
-                onChanged: (value) => setState(() {}),
+                controller: addressController,
+                label: 'Address',
+                icon: Icons.location_on_outlined,
               ),
+
               const SizedBox(height: 24),
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _saveProfile,
+                  onPressed: isSaving ? null : _saveProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
@@ -623,7 +713,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(
+                  child: isSaving
+                      ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : Text(
                     'Save Changes',
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
@@ -643,17 +742,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
     required String label,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
-    void Function(String)? onChanged,
+    bool enabled = true,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      onChanged: onChanged,
-      style: GoogleFonts.inter(),
+      enabled: enabled,
+      style: GoogleFonts.inter(
+        color: enabled ? darkText : Colors.grey[700],
+      ),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.inter(),
         prefixIcon: Icon(icon),
+        filled: true,
+        fillColor: enabled ? Colors.white : Colors.grey[100],
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
         ),
